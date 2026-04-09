@@ -14,24 +14,36 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
         layout.setBackgroundColor(Color.parseColor("#181C2E"));
         layout.setGravity(Gravity.CENTER);
 
         TextView text = new TextView(this);
 
         try {
-            GameManager gm = new GameManager();
             LevelManager lm = new LevelManager();
             java.util.List<Tube> tubes = lm.generateLevel(1);
-            text.setText("GameManager OK ✅\nТруб: " + tubes.size());
+
+            // Пробуем создать TubeView
+            TubeView tv = new TubeView(this);
+            tv.setTube(tubes.get(0));
+
+            text.setText("TubeView OK ✅");
+            layout.addView(text);
+            layout.addView(tv, new LinearLayout.LayoutParams(dp(80), dp(280)));
+
         } catch (Exception e) {
-            text.setText("ОШИБКА:\n" + e.getMessage());
+            text.setText("ОШИБКА в TubeView:\n" + e.getMessage());
+            layout.addView(text);
         }
 
         text.setTextColor(Color.WHITE);
         text.setTextSize(24f);
         text.setGravity(Gravity.CENTER);
-        layout.addView(text);
         setContentView(layout);
+    }
+
+    private int dp(float dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
     }
 }

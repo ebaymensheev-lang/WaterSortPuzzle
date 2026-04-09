@@ -18,10 +18,19 @@ public class MainActivity extends AppCompatActivity {
         layout.setGravity(Gravity.CENTER);
 
         TextView text = new TextView(this);
-        text.setText("Игра работает! ✅");
-        text.setTextColor(Color.WHITE);
-        text.setTextSize(32f);
 
+        try {
+            GameManager gm = new GameManager();
+            LevelManager lm = new LevelManager();
+            java.util.List<Tube> tubes = lm.generateLevel(1);
+            text.setText("GameManager OK ✅\nТруб: " + tubes.size());
+        } catch (Exception e) {
+            text.setText("ОШИБКА:\n" + e.getMessage());
+        }
+
+        text.setTextColor(Color.WHITE);
+        text.setTextSize(24f);
+        text.setGravity(Gravity.CENTER);
         layout.addView(text);
         setContentView(layout);
     }

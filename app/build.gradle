@@ -3,6 +3,7 @@ plugins {
 }
 
 android {
+    namespace "com.watersort.puzzle"
     compileSdk 34
 
     defaultConfig {
@@ -16,7 +17,7 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-            signingConfig signingConfigs.debug   // debug-подпись для тестов
+            signingConfig signingConfigs.debug
         }
     }
 

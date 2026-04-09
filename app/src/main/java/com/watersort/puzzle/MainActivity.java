@@ -1,14 +1,11 @@
 package com.watersort.puzzle;
 
-import android.animation.ObjectAnimator;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Gravity;
-import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.BounceInterpolator;
-import android.widget.*;
-import androidx.appcompat.app.AlertDialog;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,236 +13,72 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity implements GameManager.GameListener {
 
     private final GameManager gameManager = new GameManager();
-    private TextView levelText;
     private LinearLayout tubeContainer;
-    private View winBanner;
-    private TextView winLevelText;
     private final List<TubeView> tubeViews = new ArrayList<>();
+    private TextView statusText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        buildUI();
-        gameManager.setListener(this);
-        gameManager.loadLevel(1);
-    }
 
-    private void buildUI() {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Color.parseColor("#181C2E"));
         root.setGravity(Gravity.CENTER_HORIZONTAL);
         setContentView(root);
 
-        LinearLayout topBar = new LinearLayout(this);
-        topBar.setGravity(Gravity.CENTER);
-        topBar.setBackgroundColor(Color.parseColor("#1E2438"));
-        topBar.setPadding(dp(16), dp(14), dp(16), dp(14));
-        root.addView(topBar, new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        levelText = new TextView(this);
-        levelText.setTextColor(Color.WHITE);
-        levelText.setTextSize(22f);
-        levelText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        levelText.setGravity(Gravity.CENTER);
-        topBar.addView(levelText, new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        statusText = new TextView(this);
+        statusText.setTextColor(Color.WHITE);
+        statusText.setTextSize(18f);
+        statusText.setGravity(Gravity.CENTER);
+        statusText.setText("Загрузка...");
+        root.addView(statusText);
 
         tubeContainer = new LinearLayout(this);
         tubeContainer.setOrientation(LinearLayout.HORIZONTAL);
-        tubeContainer.setGravity(Gravity.CENTER | Gravity.BOTTOM);
-        tubeContainer.setPadding(dp(8), dp(16), dp(8), dp(8));
+        tubeContainer.setGravity(Gravity.CENTER);
         root.addView(tubeContainer, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
-        winBanner = buildWinBanner();
-        root.addView(winBanner, new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        LinearLayout bottomBar = new LinearLayout(this);
-        bottomBar.setOrientation(LinearLayout.VERTICAL);
-        bottomBar.setBackgroundColor(Color.parseColor("#1E2438"));
-        bottomBar.setPadding(dp(12), dp(8), dp(12), dp(20));
-        root.addView(bottomBar, new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        LinearLayout row1 = makeRow();
-        bottomBar.addView(row1, new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        Button btnRestart = makeButton("↺  Restart", "#4085F5");
-        Button btnUndo    = makeButton("↩  Undo",    "#6E7191");
-        row1.addView(btnRestart, new LinearLayout.LayoutParams(0, dp(52), 1f));
-        row1.addView(space(), null);
-        row1.addView(btnUndo,   new LinearLayout.LayoutParams(0, dp(52), 1f));
-
-        LinearLayout row2 = makeRow();
-        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        rp.topMargin = dp(8);
-        bottomBar.addView(row2, rp);
-        Button btnHint = makeButton("💡  Hint", "#E68A00");
-        Button btnSkip = makeButton("⏭  Skip", "#E68A00");
-        row2.addView(btnHint, new LinearLayout.LayoutParams(0, dp(52), 1f));
-        row2.addView(space(), null);
-        row2.addView(btnSkip, new LinearLayout.LayoutParams(0, dp(52), 1f));
-
-        btnRestart.setOnClickListener(v -> gameManager.restartLevel());
-        btnUndo.setOnClickListener(v -> gameManager.undoMove());
-        btnHint.setOnClickListener(v -> showHint());
-        btnSkip.setOnClickListener(v -> new AlertDialog.Builder(this)
-            .setTitle("Пропустить уровень?")
-            .setPositiveButton("Пропустить", (d, w) -> gameManager.nextLevel())
-            .setNegativeButton("Отмена", null)
-            .show());
-    }
-
-    private View buildWinBanner() {
-        LinearLayout banner = new LinearLayout(this);
-        banner.setOrientation(LinearLayout.VERTICAL);
-        banner.setGravity(Gravity.CENTER);
-        banner.setBackgroundColor(Color.parseColor("#CC1E2438"));
-        banner.setPadding(dp(24), dp(16), dp(24), dp(16));
-        banner.setVisibility(View.GONE);
-
-        winLevelText = new TextView(this);
-        winLevelText.setTextColor(Color.parseColor("#F5D920"));
-        winLevelText.setTextSize(26f);
-        winLevelText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        winLevelText.setGravity(Gravity.CENTER);
-        banner.addView(winLevelText);
-
-        Button btnNext = makeButton("▶  Next Level", "#38C664");
-        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(dp(260), dp(56));
-        p.topMargin = dp(12);
-        banner.addView(btnNext, p);
-        btnNext.setOnClickListener(v -> {
-            banner.setVisibility(View.GONE);
-            gameManager.nextLevel();
-        });
-        return banner;
+        try {
+            statusText.setText("Шаг 1: setListener...");
+            gameManager.setListener(this);
+            statusText.setText("Шаг 2: loadLevel...");
+            gameManager.loadLevel(1);
+            statusText.setText("Шаг 3: готово ✅");
+        } catch (Exception e) {
+            statusText.setText("ОШИБКА: " + e.getMessage());
+        }
     }
 
     @Override
     public void onLevelLoaded(int level, List<Tube> tubes) {
-        levelText.setText("Level  " + level);
-        winBanner.setVisibility(View.GONE);
-        buildTubeViews(tubes);
-    }
-
-    @Override
-    public void onSelectionChanged(int selectedIndex) {
-        for (int i = 0; i < tubeViews.size(); i++)
-            tubeViews.get(i).setSelected(i == selectedIndex);
-    }
-
-    @Override
-    public void onMoveSuccess(int fromIndex, int toIndex) {
-        if (fromIndex < tubeViews.size()) tubeViews.get(fromIndex).invalidate();
-        if (toIndex   < tubeViews.size()) tubeViews.get(toIndex).invalidate();
-    }
-
-    @Override
-    public void onMoveInvalid() {
-        int sel = gameManager.getSelectedIndex();
-        if (sel >= 0 && sel < tubeViews.size()) {
-            ObjectAnimator shake = ObjectAnimator.ofFloat(
-                tubeViews.get(sel), "translationX", 0, -14, 14, -8, 8, 0);
-            shake.setDuration(280);
-            shake.start();
+        try {
+            statusText.setText("onLevelLoaded: " + tubes.size() + " труб...");
+            tubeContainer.removeAllViews();
+            tubeViews.clear();
+            for (int i = 0; i < tubes.size(); i++) {
+                TubeView tv = new TubeView(this);
+                tv.setTube(tubes.get(i));
+                final int idx = i;
+                tv.setOnTubeClickListener(v -> gameManager.onTubeClicked(idx));
+                LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(dp(72), dp(260));
+                p.setMargins(dp(4), 0, dp(4), 0);
+                tubeContainer.addView(tv, p);
+                tubeViews.add(tv);
+                statusText.setText("Добавлена труба " + (i+1));
+            }
+            statusText.setText("Все трубы OK ✅ Level " + level);
+        } catch (Exception e) {
+            statusText.setText("ОШИБКА в onLevelLoaded: " + e.getMessage());
         }
     }
 
-    @Override
-    public void onLevelComplete() {
-        winLevelText.setText("🎉  Level " + gameManager.getCurrentLevel() + " Complete!");
-        winBanner.setVisibility(View.VISIBLE);
-        winBanner.setAlpha(0f);
-        winBanner.animate().alpha(1f).setDuration(400).start();
-        for (int i = 0; i < tubeViews.size(); i++) {
-            final TubeView tv = tubeViews.get(i);
-            tv.postDelayed(() -> {
-                ObjectAnimator b = ObjectAnimator.ofFloat(tv, "translationY", 0, -dp(30), 0);
-                b.setInterpolator(new BounceInterpolator());
-                b.setDuration(600);
-                b.start();
-            }, i * 80L);
-        }
-    }
-
-    private void buildTubeViews(List<Tube> tubes) {
-        tubeContainer.removeAllViews();
-        tubeContainer.setOrientation(LinearLayout.HORIZONTAL);
-        tubeViews.clear();
-        if (tubes.size() > 6) { buildTwoRows(tubes); return; }
-        for (int i = 0; i < tubes.size(); i++) addTubeView(tubeContainer, tubes.get(i), i);
-    }
-
-    private void buildTwoRows(List<Tube> tubes) {
-        tubeContainer.setOrientation(LinearLayout.VERTICAL);
-        tubeContainer.setGravity(Gravity.CENTER);
-        int half = (tubes.size() + 1) / 2;
-        LinearLayout row1 = makeRow(); row1.setGravity(Gravity.CENTER);
-        LinearLayout row2 = makeRow(); row2.setGravity(Gravity.CENTER);
-        for (int i = 0; i < half; i++) addTubeView(row1, tubes.get(i), i);
-        for (int i = half; i < tubes.size(); i++) addTubeView(row2, tubes.get(i), i);
-        tubeContainer.addView(row1);
-        tubeContainer.addView(row2);
-    }
-
-    private void addTubeView(LinearLayout parent, Tube tube, int index) {
-        TubeView tv = new TubeView(this);
-        tv.setTube(tube);
-        tv.setOnTubeClickListener(v -> gameManager.onTubeClicked(index));
-        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(dp(72), dp(260));
-        p.setMargins(dp(4), 0, dp(4), 0);
-        parent.addView(tv, p);
-        tubeViews.add(tv);
-    }
-
-    private void showHint() {
-        int[] hint = gameManager.findHint();
-        if (hint == null) {
-            Toast.makeText(this, "Нет ходов!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        blinkTube(tubeViews.get(hint[0]), 0);
-        blinkTube(tubeViews.get(hint[1]), 250);
-    }
-
-    private void blinkTube(TubeView tv, long delay) {
-        tv.postDelayed(() -> {
-            tv.setSelected(true);
-            tv.postDelayed(() -> { tv.setSelected(false);
-                tv.postDelayed(() -> { tv.setSelected(true);
-                    tv.postDelayed(() -> tv.setSelected(false), 300);
-                }, 200);
-            }, 300);
-        }, delay);
-    }
-
-    private Button makeButton(String text, String color) {
-        Button btn = new Button(this);
-        btn.setText(text);
-        btn.setTextColor(Color.WHITE);
-        btn.setTextSize(14f);
-        btn.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        btn.setBackgroundColor(Color.parseColor(color));
-        btn.setAllCaps(false);
-        return btn;
-    }
-
-    private LinearLayout makeRow() {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER);
-        return row;
-    }
-
-    private View space() {
-        View v = new View(this);
-        v.setLayoutParams(new ViewGroup.LayoutParams(dp(8), dp(8)));
-        return v;
+    @Override public void onSelectionChanged(int i) {}
+    @Override public void onMoveSuccess(int f, int t) {}
+    @Override public void onMoveInvalid() {}
+    @Override public void onLevelComplete() {
+        statusText.setText("Уровень пройден! 🎉");
     }
 
     private int dp(float dp) {

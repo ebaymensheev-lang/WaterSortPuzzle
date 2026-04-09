@@ -37,6 +37,7 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
         root.setGravity(Gravity.CENTER_HORIZONTAL);
         setContentView(root);
 
+        // Верхняя панель
         LinearLayout topBar = new LinearLayout(this);
         topBar.setGravity(Gravity.CENTER);
         topBar.setBackgroundColor(Color.parseColor("#1E2438"));
@@ -52,6 +53,7 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
         topBar.addView(levelText, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
+        // Поле колб
         tubeContainer = new LinearLayout(this);
         tubeContainer.setOrientation(LinearLayout.HORIZONTAL);
         tubeContainer.setGravity(Gravity.CENTER | Gravity.BOTTOM);
@@ -59,10 +61,12 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
         root.addView(tubeContainer, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
+        // Баннер победы
         winBanner = buildWinBanner();
         root.addView(winBanner, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
+        // Нижняя панель
         LinearLayout bottomBar = new LinearLayout(this);
         bottomBar.setOrientation(LinearLayout.VERTICAL);
         bottomBar.setBackgroundColor(Color.parseColor("#1E2438"));

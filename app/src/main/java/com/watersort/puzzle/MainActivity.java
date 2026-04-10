@@ -2,6 +2,8 @@ package com.watersort.puzzle;
 
 import android.animation.ObjectAnimator;
 import android.graphics.Color;
+import android.media.ToneGenerator;
+import android.media.AudioManager;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -19,10 +21,18 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
     private TextView levelText;
     private TextView winBanner;
     private final List<TubeView> tubeViews = new ArrayList<>();
+    private ToneGenerator toneGenerator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Инициализируем звук
+        try {
+            toneGenerator = new ToneGenerator(AudioManager.STREAM_MUSIC, 60);
+        } catch (Exception e) {
+            toneGenerator = null;
+        }
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -98,6 +108,26 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
         gameManager.loadLevel(1);
     }
 
+    private void playSound() {
+        try {
+            if (toneGenerator != null) {
+                toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP, 80);
+            }
+        } catch (Exception e) {
+            // игнорируем если не работает
+        }
+    }
+
+    private void playWinSound() {
+        try {
+            if (toneGenerator != null) {
+                toneGenerator.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 300);
+            }
+        } catch (Exception e) {
+            // игнорируем
+        }
+    }
+
     @Override
     public void onLevelLoaded(int level, List<Tube> tubes) {
         levelText.setText("Level " + level);
@@ -122,6 +152,7 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
 
     @Override
     public void onMoveSuccess(int f, int t) {
+        playSound();
         if (f < tubeViews.size()) tubeViews.get(f).invalidate();
         if (t < tubeViews.size()) tubeViews.get(t).invalidate();
     }
@@ -139,6 +170,7 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
 
     @Override
     public void onLevelComplete() {
+        playWinSound();
         winBanner.setText("🎉 Level " + gameManager.getCurrentLevel() + " Complete! Нажмите Next!");
         winBanner.setVisibility(View.VISIBLE);
         winBanner.setAlpha(0f);
@@ -231,5 +263,14 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
 
     private int dp(float dp) {
         return Math.round(dp * getResources().getDisplayMetrics().density);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (toneGenerator != null) {
+            toneGenerator.release();
+            toneGenerator = null;
+        }
     }
 }

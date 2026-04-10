@@ -259,7 +259,7 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
     LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(dp(8), dp(8));
     v.setLayoutParams(p);
     return v;
-}
+    }
 
     private int dp(float dp) {
         return Math.round(dp * getResources().getDisplayMetrics().density);

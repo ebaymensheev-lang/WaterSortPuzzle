@@ -15,56 +15,47 @@ public class TubeView extends View {
     private boolean selected = false;
     private OnTubeClickListener listener;
 
-    // Краски
-    private final Paint jarPaint    = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint jarBorder   = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint boxPaint    = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint boxBorder   = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint candyPaint  = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint wrapPaint   = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint shinePaint  = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint solvedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint lidPaint    = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint dividerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public TubeView(Context context) {
         super(context);
 
-        // Стекло банки
-        jarPaint.setColor(Color.parseColor("#E8F4FD"));
-        jarPaint.setAlpha(180);
-        jarPaint.setStyle(Paint.Style.FILL);
+        boxPaint.setColor(Color.parseColor("#2A2D3E"));
+        boxPaint.setStyle(Paint.Style.FILL);
 
-        // Рамка банки
-        jarBorder.setColor(Color.parseColor("#B8D4E8"));
-        jarBorder.setStyle(Paint.Style.STROKE);
-        jarBorder.setStrokeWidth(3f);
+        boxBorder.setColor(Color.parseColor("#4A4D6E"));
+        boxBorder.setStyle(Paint.Style.STROKE);
+        boxBorder.setStrokeWidth(3f);
 
-        // Блик на конфете
         shinePaint.setColor(Color.WHITE);
-        shinePaint.setAlpha(120);
+        shinePaint.setAlpha(40);
         shinePaint.setStyle(Paint.Style.FILL);
 
-        // Тень
-        shadowPaint.setColor(Color.parseColor("#44000000"));
+        shadowPaint.setColor(Color.parseColor("#88000000"));
         shadowPaint.setStyle(Paint.Style.FILL);
 
-        // Рамка решённой банки
         solvedPaint.setColor(Color.parseColor("#FFD93D"));
         solvedPaint.setStyle(Paint.Style.STROKE);
-        solvedPaint.setStrokeWidth(5f);
+        solvedPaint.setStrokeWidth(4f);
 
-        // Крышка банки
-        lidPaint.setStyle(Paint.Style.FILL);
+        dividerPaint.setColor(Color.parseColor("#1AFFFFFF"));
+        dividerPaint.setStyle(Paint.Style.STROKE);
+        dividerPaint.setStrokeWidth(1f);
+
+        wrapPaint.setStyle(Paint.Style.FILL);
+        wrapPaint.setAlpha(180);
     }
 
-    public void setTube(Tube tube) {
-        this.tube = tube;
-        invalidate();
-    }
-
+    public void setTube(Tube tube) { this.tube = tube; invalidate(); }
     public Tube getTube() { return tube; }
-
-    public void setOnTubeClickListener(OnTubeClickListener l) {
-        this.listener = l;
-    }
+    public void setOnTubeClickListener(OnTubeClickListener l) { this.listener = l; }
 
     @Override
     public void setSelected(boolean selected) {
@@ -89,109 +80,185 @@ public class TubeView extends View {
         int w = getWidth();
         int h = getHeight();
 
-        float candyRadius = w / 2f * 0.75f;
-        float jarW  = w * 0.82f;
-        float left  = (w - jarW) / 2f;
-        float bottom = h - dp(8);
-        float jarH  = candyRadius * 2.1f * tube.getMaxCapacity() + dp(8);
-        float top   = bottom - jarH;
-        float r     = jarW / 2f;
+        // Размеры коробки
+        float boxW  = w - dp(8);
+        float slotH = (h - dp(16)) / (float) tube.getMaxCapacity();
+        float boxH  = slotH * tube.getMaxCapacity();
+        float left  = (w - boxW) / 2f;
+        float top   = h - dp(8) - boxH;
+        float right = left + boxW;
+        float bottom = top + boxH;
 
-        // Смещение вверх если выбрана
-        float offsetY = selected ? -dp(22) : 0;
+        float offsetY = selected ? -dp(18) : 0;
         canvas.save();
         canvas.translate(0, offsetY);
 
-        // Рисуем банку (прямоугольник с закруглённым дном)
-        Path jarPath = new Path();
-        jarPath.moveTo(left, top + dp(16));
-        jarPath.lineTo(left, bottom - r);
-        jarPath.arcTo(new RectF(left, bottom - jarW, left + jarW, bottom), 180, -180, false);
-        jarPath.lineTo(left + jarW, top + dp(16));
-        jarPath.close();
+        // Тень коробки
+        shadowPaint.setAlpha(60);
+        RectF shadowRect = new RectF(left + dp(4), top + dp(4), right + dp(4), bottom + dp(4));
+        canvas.drawRoundRect(shadowRect, dp(8), dp(8), shadowPaint);
 
-        // Тень банки
-        canvas.save();
-        canvas.translate(dp(3), dp(3));
-        canvas.drawPath(jarPath, shadowPaint);
-        canvas.restore();
+        // Тело коробки
+        RectF boxRect = new RectF(left, top, right, bottom);
+        canvas.drawRoundRect(boxRect, dp(8), dp(8), boxPaint);
 
-        // Тело банки
-        canvas.drawPath(jarPath, jarPaint);
-
-        // Рисуем конфеты
-        float cx = w / 2f;
+        // Рисуем слоты с конфетами (снизу вверх)
         int count = tube.getCount();
-        for (int i = 0; i < count; i++) {
-            Ball ball = tube.getBallAt(i);
-            if (ball == null) continue;
+        for (int i = 0; i < tube.getMaxCapacity(); i++) {
+            float slotTop    = top + i * slotH;
+            float slotBottom = slotTop + slotH;
+            RectF slotRect = new RectF(left + dp(4), slotTop + dp(3),
+                right - dp(4), slotBottom - dp(3));
 
-            float cy = bottom - candyRadius * 0.6f
-                     - (i * candyRadius * 2.1f) - candyRadius;
+            // Фон слота (темнее)
+            Paint slotBg = new Paint(Paint.ANTI_ALIAS_FLAG);
+            slotBg.setColor(Color.parseColor("#1A1C2A"));
+            slotBg.setStyle(Paint.Style.FILL);
+            canvas.drawRoundRect(slotRect, dp(4), dp(4), slotBg);
 
-            // Тень конфеты
-            shadowPaint.setAlpha(50);
-            canvas.drawCircle(cx + dp(2), cy + dp(2), candyRadius, shadowPaint);
+            // Конфета в слоте (индекс 0 = нижний, рисуем снизу вверх)
+            int ballIndex = tube.getMaxCapacity() - 1 - i;
+            if (ballIndex < count) {
+                Ball ball = tube.getBallAt(ballIndex);
+                if (ball != null) {
+                    drawCandyInSlot(canvas, ball.getColor(), slotRect);
+                }
+            }
 
-            // Конфета
-            candyPaint.setColor(ball.getColor());
-            canvas.drawCircle(cx, cy, candyRadius, candyPaint);
-
-            // Блик (делает конфету объёмной)
-            canvas.drawCircle(
-                cx - candyRadius * 0.28f,
-                cy - candyRadius * 0.28f,
-                candyRadius * 0.35f,
-                shinePaint
-            );
-
-            // Маленький блик
-            shinePaint.setAlpha(60);
-            canvas.drawCircle(
-                cx + candyRadius * 0.2f,
-                cy + candyRadius * 0.2f,
-                candyRadius * 0.15f,
-                shinePaint
-            );
-            shinePaint.setAlpha(120);
+            // Разделитель между слотами
+            if (i < tube.getMaxCapacity() - 1) {
+                canvas.drawLine(left + dp(8), slotBottom,
+                    right - dp(8), slotBottom, dividerPaint);
+            }
         }
 
-        // Рамка банки (поверх конфет)
-        Paint borderToDraw = tube.isSolved() ? solvedPaint : jarBorder;
+        // Рамка коробки
+        Paint borderToDraw = tube.isSolved() ? solvedPaint : boxBorder;
         if (selected) {
-            Paint selPaint = new Paint(jarBorder);
-            selPaint.setColor(Color.parseColor("#FF6B9D"));
-            selPaint.setStrokeWidth(5f);
-            canvas.drawPath(jarPath, selPaint);
+            Paint selPaint = new Paint(boxBorder);
+            selPaint.setColor(Color.parseColor("#54C6EB"));
+            selPaint.setStrokeWidth(4f);
+            canvas.drawRoundRect(boxRect, dp(8), dp(8), selPaint);
         } else {
-            canvas.drawPath(jarPath, borderToDraw);
+            canvas.drawRoundRect(boxRect, dp(8), dp(8), borderToDraw);
         }
 
-        // Крышка банки (горлышко)
-        float lidW = jarW * 0.7f;
-        float lidL = (w - lidW) / 2f;
-        float lidH = dp(12);
-        RectF lidRect = new RectF(lidL, top, lidL + lidW, top + lidH);
-
-        if (tube.isSolved() && !tube.isEmpty()) {
-            // Золотая крышка если решена
-            lidPaint.setColor(Color.parseColor("#FFD93D"));
-        } else {
-            lidPaint.setColor(Color.parseColor("#B8D4E8"));
-        }
-        canvas.drawRoundRect(lidRect, dp(4), dp(4), lidPaint);
-
-        // Блик на крышке
-        Paint lidShine = new Paint(Paint.ANTI_ALIAS_FLAG);
-        lidShine.setColor(Color.WHITE);
-        lidShine.setAlpha(80);
-        lidShine.setStyle(Paint.Style.FILL);
-        canvas.drawRoundRect(
-            new RectF(lidL + dp(4), top + dp(2), lidL + lidW - dp(4), top + lidH / 2f),
-            dp(3), dp(3), lidShine
-        );
+        // Блик сверху (стеклянный эффект)
+        RectF shineRect = new RectF(left + dp(6), top + dp(4),
+            right - dp(6), top + dp(16));
+        canvas.drawRoundRect(shineRect, dp(4), dp(4), shinePaint);
 
         canvas.restore();
+    }
+
+    // Рисуем порцию конфет в фантиках в одном слоте
+    private void drawCandyInSlot(Canvas canvas, int color, RectF slot) {
+        float sw = slot.width();
+        float sh = slot.height();
+        float cx = slot.left + sw / 2f;
+        float cy = slot.top  + sh / 2f;
+
+        // 4 маленькие конфеты в фантиках расположены 2x2
+        float candyW = sw * 0.38f;
+        float candyH = sh * 0.36f;
+        float gapX   = sw * 0.08f;
+        float gapY   = sh * 0.06f;
+
+        float[] xs = {
+            cx - candyW / 2f - gapX,
+            cx + gapX,
+            cx - candyW / 2f - gapX,
+            cx + gapX
+        };
+        float[] ys = {
+            cy - candyH / 2f - gapY,
+            cy - candyH / 2f - gapY,
+            cy + gapY,
+            cy + gapY
+        };
+
+        for (int i = 0; i < 4; i++) {
+            drawWrappedCandy(canvas, xs[i], ys[i], candyW, candyH, color);
+        }
+    }
+
+    // Рисуем одну конфету в фантике (прямоугольник с закрученными концами)
+    private void drawWrappedCandy(Canvas canvas, float x, float y,
+                                   float w, float h, int color) {
+        float r = h * 0.35f; // радиус скругления тела
+
+        // Тело конфеты
+        candyPaint.setColor(color);
+        RectF body = new RectF(x + w * 0.2f, y, x + w * 0.8f, y + h);
+        canvas.drawRoundRect(body, r, r, candyPaint);
+
+        // Блик на теле
+        Paint shine = new Paint(Paint.ANTI_ALIAS_FLAG);
+        shine.setColor(Color.WHITE);
+        shine.setAlpha(60);
+        shine.setStyle(Paint.Style.FILL);
+        RectF shineRect = new RectF(
+            body.left + w * 0.06f, body.top + h * 0.08f,
+            body.right - w * 0.1f, body.top + h * 0.3f);
+        canvas.drawRoundRect(shineRect, r * 0.5f, r * 0.5f, shine);
+
+        // Левый фантик (скрученный конец)
+        drawWrapEnd(canvas, x, y + h * 0.15f, w * 0.22f, h * 0.7f, color, true);
+
+        // Правый фантик
+        drawWrapEnd(canvas, x + w * 0.78f, y + h * 0.15f, w * 0.22f, h * 0.7f, color, false);
+    }
+
+    // Рисуем скрученный конец фантика
+    private void drawWrapEnd(Canvas canvas, float x, float y,
+                              float w, float h, int color, boolean left) {
+        // Более тёмный цвет для фантика
+        int darkColor = darkenColor(color, 0.7f);
+        wrapPaint.setColor(darkColor);
+        wrapPaint.setAlpha(200);
+
+        Path path = new Path();
+        if (left) {
+            // Левый конец — сужается влево
+            path.moveTo(x + w, y);
+            path.lineTo(x, y + h * 0.5f);
+            path.lineTo(x + w, y + h);
+            path.close();
+        } else {
+            // Правый конец — сужается вправо
+            path.moveTo(x, y);
+            path.lineTo(x + w, y + h * 0.5f);
+            path.lineTo(x, y + h);
+            path.close();
+        }
+        canvas.drawPath(path, wrapPaint);
+
+        // Линии на фантике (имитация скрутки)
+        Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        linePaint.setColor(Color.WHITE);
+        linePaint.setAlpha(40);
+        linePaint.setStyle(Paint.Style.STROKE);
+        linePaint.setStrokeWidth(dp(0.8f));
+
+        if (left) {
+            canvas.drawLine(x + w * 0.3f, y + h * 0.2f,
+                x + w * 0.7f, y + h * 0.5f, linePaint);
+            canvas.drawLine(x + w * 0.3f, y + h * 0.8f,
+                x + w * 0.7f, y + h * 0.5f, linePaint);
+        } else {
+            canvas.drawLine(x + w * 0.7f, y + h * 0.2f,
+                x + w * 0.3f, y + h * 0.5f, linePaint);
+            canvas.drawLine(x + w * 0.7f, y + h * 0.8f,
+                x + w * 0.3f, y + h * 0.5f, linePaint);
+        }
+    }
+
+    // Затемнить цвет
+    private int darkenColor(int color, float factor) {
+        int r = (int) (Color.red(color)   * factor);
+        int g = (int) (Color.green(color) * factor);
+        int b = (int) (Color.blue(color)  * factor);
+        return Color.rgb(r, g, b);
     }
 
     private float dp(float dp) {

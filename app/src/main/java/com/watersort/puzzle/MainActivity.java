@@ -8,7 +8,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.BounceInterpolator;
 import android.widget.*;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,8 +17,7 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
     private final GameManager gameManager = new GameManager();
     private LinearLayout tubeContainer;
     private TextView levelText;
-    private View winBanner;
-    private TextView winLevelText;
+    private TextView winBanner;
     private final List<TubeView> tubeViews = new ArrayList<>();
 
     @Override
@@ -31,7 +29,6 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
         root.setBackgroundColor(Color.parseColor("#181C2E"));
         setContentView(root);
 
-        // Верхняя панель
         LinearLayout topBar = new LinearLayout(this);
         topBar.setGravity(Gravity.CENTER);
         topBar.setBackgroundColor(Color.parseColor("#1E2438"));
@@ -47,7 +44,6 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
         topBar.addView(levelText, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        // Поле колб
         tubeContainer = new LinearLayout(this);
         tubeContainer.setOrientation(LinearLayout.HORIZONTAL);
         tubeContainer.setGravity(Gravity.CENTER | Gravity.BOTTOM);
@@ -55,12 +51,17 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
         root.addView(tubeContainer, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
-        // Баннер победы
-        winBanner = buildWinBanner();
+        winBanner = new TextView(this);
+        winBanner.setTextColor(Color.parseColor("#F5D920"));
+        winBanner.setTextSize(22f);
+        winBanner.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        winBanner.setGravity(Gravity.CENTER);
+        winBanner.setBackgroundColor(Color.parseColor("#CC1E2438"));
+        winBanner.setPadding(dp(24), dp(16), dp(24), dp(16));
+        winBanner.setVisibility(View.GONE);
         root.addView(winBanner, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        // Нижняя панель
         LinearLayout bottomBar = new LinearLayout(this);
         bottomBar.setOrientation(LinearLayout.VERTICAL);
         bottomBar.setBackgroundColor(Color.parseColor("#1E2438"));
@@ -68,65 +69,33 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
         root.addView(bottomBar, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        // Ряд 1: Restart + Undo
         LinearLayout row1 = makeRow();
         bottomBar.addView(row1, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         Button btnRestart = makeButton("↺  Restart", "#4085F5");
         Button btnUndo    = makeButton("↩  Undo",    "#6E7191");
         row1.addView(btnRestart, new LinearLayout.LayoutParams(0, dp(52), 1f));
-        row1.addView(space(), null);
-        row1.addView(btnUndo,   new LinearLayout.LayoutParams(0, dp(52), 1f));
+        row1.addView(space());
+        row1.addView(btnUndo, new LinearLayout.LayoutParams(0, dp(52), 1f));
 
-        // Ряд 2: Hint + Skip
         LinearLayout row2 = makeRow();
         LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         rp.topMargin = dp(8);
         bottomBar.addView(row2, rp);
         Button btnHint = makeButton("💡  Hint", "#E68A00");
-        Button btnSkip = makeButton("⏭  Skip", "#E68A00");
+        Button btnNext = makeButton("⏭  Next", "#38C664");
         row2.addView(btnHint, new LinearLayout.LayoutParams(0, dp(52), 1f));
-        row2.addView(space(), null);
-        row2.addView(btnSkip, new LinearLayout.LayoutParams(0, dp(52), 1f));
+        row2.addView(space());
+        row2.addView(btnNext, new LinearLayout.LayoutParams(0, dp(52), 1f));
 
         btnRestart.setOnClickListener(v -> gameManager.restartLevel());
         btnUndo.setOnClickListener(v -> gameManager.undoMove());
         btnHint.setOnClickListener(v -> showHint());
-        btnSkip.setOnClickListener(v -> new AlertDialog.Builder(this)
-            .setTitle("Пропустить уровень?")
-            .setPositiveButton("Пропустить", (d, w) -> gameManager.nextLevel())
-            .setNegativeButton("Отмена", null)
-            .show());
+        btnNext.setOnClickListener(v -> gameManager.nextLevel());
 
         gameManager.setListener(this);
         gameManager.loadLevel(1);
-    }
-
-    private View buildWinBanner() {
-        LinearLayout banner = new LinearLayout(this);
-        banner.setOrientation(LinearLayout.VERTICAL);
-        banner.setGravity(Gravity.CENTER);
-        banner.setBackgroundColor(Color.parseColor("#CC1E2438"));
-        banner.setPadding(dp(24), dp(16), dp(24), dp(16));
-        banner.setVisibility(View.GONE);
-
-        winLevelText = new TextView(this);
-        winLevelText.setTextColor(Color.parseColor("#F5D920"));
-        winLevelText.setTextSize(26f);
-        winLevelText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        winLevelText.setGravity(Gravity.CENTER);
-        banner.addView(winLevelText);
-
-        Button btnNext = makeButton("▶  Next Level", "#38C664");
-        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(dp(260), dp(56));
-        p.topMargin = dp(12);
-        banner.addView(btnNext, p);
-        btnNext.setOnClickListener(v -> {
-            banner.setVisibility(View.GONE);
-            gameManager.nextLevel();
-        });
-        return banner;
     }
 
     @Override
@@ -170,7 +139,7 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
 
     @Override
     public void onLevelComplete() {
-        winLevelText.setText("🎉  Level " + gameManager.getCurrentLevel() + " Complete!");
+        winBanner.setText("🎉 Level " + gameManager.getCurrentLevel() + " Complete! Нажмите Next!");
         winBanner.setVisibility(View.VISIBLE);
         winBanner.setAlpha(0f);
         winBanner.animate().alpha(1f).setDuration(400).start();
@@ -254,11 +223,10 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
         return row;
     }
 
-    private View space() {
-    Space v = new Space(this);
-    LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(dp(8), dp(8));
-    v.setLayoutParams(p);
-    return v;
+    private Space space() {
+        Space v = new Space(this);
+        v.setLayoutParams(new LinearLayout.LayoutParams(dp(8), dp(8)));
+        return v;
     }
 
     private int dp(float dp) {

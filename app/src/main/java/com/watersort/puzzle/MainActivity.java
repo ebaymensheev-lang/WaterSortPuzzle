@@ -255,10 +255,11 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
     }
 
     private View space() {
-        View v = new View(this);
-        v.setLayoutParams(new ViewGroup.LayoutParams(dp(8), dp(8)));
-        return v;
-    }
+    Space v = new Space(this);
+    LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(dp(8), dp(8));
+    v.setLayoutParams(p);
+    return v;
+}
 
     private int dp(float dp) {
         return Math.round(dp * getResources().getDisplayMetrics().density);

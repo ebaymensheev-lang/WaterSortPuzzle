@@ -27,7 +27,6 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Инициализируем звук
         try {
             toneGenerator = new ToneGenerator(AudioManager.STREAM_MUSIC, 60);
         } catch (Exception e) {
@@ -36,24 +35,41 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.parseColor("#181C2E"));
+        root.setBackgroundColor(Color.parseColor("#FFF0F5")); // Нежно-розовый фон
         setContentView(root);
 
+        // Верхняя панель
         LinearLayout topBar = new LinearLayout(this);
         topBar.setGravity(Gravity.CENTER);
-        topBar.setBackgroundColor(Color.parseColor("#1E2438"));
-        topBar.setPadding(dp(16), dp(14), dp(16), dp(14));
+        topBar.setBackgroundColor(Color.parseColor("#FF6B9D")); // Клубничный
+        topBar.setPadding(dp(16), dp(16), dp(16), dp(16));
         root.addView(topBar, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        levelText = new TextView(this);
-        levelText.setTextColor(Color.WHITE);
-        levelText.setTextSize(22f);
-        levelText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        levelText.setGravity(Gravity.CENTER);
-        topBar.addView(levelText, new LinearLayout.LayoutParams(
+        // Название + уровень
+        LinearLayout titleRow = new LinearLayout(this);
+        titleRow.setOrientation(LinearLayout.VERTICAL);
+        titleRow.setGravity(Gravity.CENTER);
+        topBar.addView(titleRow, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
+        TextView titleText = new TextView(this);
+        titleText.setText("🍭 Candy Sort");
+        titleText.setTextColor(Color.WHITE);
+        titleText.setTextSize(24f);
+        titleText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        titleText.setGravity(Gravity.CENTER);
+        titleRow.addView(titleText, new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        levelText = new TextView(this);
+        levelText.setTextColor(Color.parseColor("#FFE4F0"));
+        levelText.setTextSize(16f);
+        levelText.setGravity(Gravity.CENTER);
+        titleRow.addView(levelText, new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        // Поле банок
         tubeContainer = new LinearLayout(this);
         tubeContainer.setOrientation(LinearLayout.HORIZONTAL);
         tubeContainer.setGravity(Gravity.CENTER | Gravity.BOTTOM);
@@ -61,40 +77,44 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
         root.addView(tubeContainer, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
+        // Баннер победы
         winBanner = new TextView(this);
-        winBanner.setTextColor(Color.parseColor("#F5D920"));
-        winBanner.setTextSize(22f);
+        winBanner.setTextColor(Color.WHITE);
+        winBanner.setTextSize(20f);
         winBanner.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         winBanner.setGravity(Gravity.CENTER);
-        winBanner.setBackgroundColor(Color.parseColor("#CC1E2438"));
+        winBanner.setBackgroundColor(Color.parseColor("#CC FF6B9D".replace(" ", "")));
         winBanner.setPadding(dp(24), dp(16), dp(24), dp(16));
         winBanner.setVisibility(View.GONE);
         root.addView(winBanner, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
+        // Нижняя панель
         LinearLayout bottomBar = new LinearLayout(this);
         bottomBar.setOrientation(LinearLayout.VERTICAL);
-        bottomBar.setBackgroundColor(Color.parseColor("#1E2438"));
+        bottomBar.setBackgroundColor(Color.parseColor("#FF6B9D"));
         bottomBar.setPadding(dp(12), dp(8), dp(12), dp(20));
         root.addView(bottomBar, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
+        // Ряд 1: Restart + Undo
         LinearLayout row1 = makeRow();
         bottomBar.addView(row1, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        Button btnRestart = makeButton("↺  Restart", "#4085F5");
-        Button btnUndo    = makeButton("↩  Undo",    "#6E7191");
+        Button btnRestart = makeButton("↺  Restart", "#FF4D6D");
+        Button btnUndo    = makeButton("↩  Undo",    "#C77DFF");
         row1.addView(btnRestart, new LinearLayout.LayoutParams(0, dp(52), 1f));
         row1.addView(space());
         row1.addView(btnUndo, new LinearLayout.LayoutParams(0, dp(52), 1f));
 
+        // Ряд 2: Hint + Next
         LinearLayout row2 = makeRow();
         LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         rp.topMargin = dp(8);
         bottomBar.addView(row2, rp);
-        Button btnHint = makeButton("💡  Hint", "#E68A00");
-        Button btnNext = makeButton("⏭  Next", "#38C664");
+        Button btnHint = makeButton("💡  Hint", "#FFD93D");
+        Button btnNext = makeButton("⏭  Next",  "#6BCB77");
         row2.addView(btnHint, new LinearLayout.LayoutParams(0, dp(52), 1f));
         row2.addView(space());
         row2.addView(btnNext, new LinearLayout.LayoutParams(0, dp(52), 1f));
@@ -105,32 +125,30 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
         btnNext.setOnClickListener(v -> gameManager.nextLevel());
 
         gameManager.setListener(this);
-        gameManager.loadLevel(1);
+
+        // Загружаем сохранённый уровень
+        int savedLevel = getSharedPreferences("candy_sort", MODE_PRIVATE)
+            .getInt("level", 1);
+        gameManager.loadLevel(savedLevel);
     }
 
     private void playSound() {
         try {
-            if (toneGenerator != null) {
+            if (toneGenerator != null)
                 toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP, 80);
-            }
-        } catch (Exception e) {
-            // игнорируем если не работает
-        }
+        } catch (Exception e) {}
     }
 
     private void playWinSound() {
         try {
-            if (toneGenerator != null) {
+            if (toneGenerator != null)
                 toneGenerator.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 300);
-            }
-        } catch (Exception e) {
-            // игнорируем
-        }
+        } catch (Exception e) {}
     }
 
     @Override
     public void onLevelLoaded(int level, List<Tube> tubes) {
-        levelText.setText("Level " + level);
+        levelText.setText("Уровень " + level + " из " + LevelManager.TOTAL_LEVELS);
         winBanner.setVisibility(View.GONE);
         tubeContainer.removeAllViews();
         tubeViews.clear();
@@ -171,10 +189,19 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
     @Override
     public void onLevelComplete() {
         playWinSound();
-        winBanner.setText("🎉 Level " + gameManager.getCurrentLevel() + " Complete! Нажмите Next!");
+
+        // Сохраняем прогресс
+        int next = gameManager.getCurrentLevel() + 1;
+        if (next <= LevelManager.TOTAL_LEVELS) {
+            getSharedPreferences("candy_sort", MODE_PRIVATE)
+                .edit().putInt("level", next).apply();
+        }
+
+        winBanner.setText("🎉 Уровень пройден! Нажмите Next!");
         winBanner.setVisibility(View.VISIBLE);
         winBanner.setAlpha(0f);
         winBanner.animate().alpha(1f).setDuration(400).start();
+
         for (int i = 0; i < tubeViews.size(); i++) {
             final TubeView tv = tubeViews.get(i);
             tv.postDelayed(() -> {
@@ -208,7 +235,7 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
             int idx = (int) v.getTag();
             gameManager.onTubeClicked(idx);
         });
-        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(dp(72), dp(260));
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(dp(72), dp(280));
         p.setMargins(dp(4), 0, dp(4), 0);
         parent.addView(tv, p);
         tubeViews.add(tv);
@@ -217,7 +244,7 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
     private void showHint() {
         int[] hint = gameManager.findHint();
         if (hint == null) {
-            Toast.makeText(this, "Нет ходов!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Нет доступных ходов!", Toast.LENGTH_SHORT).show();
             return;
         }
         blinkTube(tubeViews.get(hint[0]), 0);

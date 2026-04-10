@@ -6,6 +6,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.*;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,25 +27,68 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
         root.setBackgroundColor(Color.parseColor("#181C2E"));
         setContentView(root);
 
+        // Верхняя панель
+        LinearLayout topBar = new LinearLayout(this);
+        topBar.setGravity(Gravity.CENTER);
+        topBar.setBackgroundColor(Color.parseColor("#1E2438"));
+        topBar.setPadding(dp(16), dp(14), dp(16), dp(14));
+        root.addView(topBar, new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
         levelText = new TextView(this);
         levelText.setTextColor(Color.WHITE);
         levelText.setTextSize(22f);
+        levelText.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         levelText.setGravity(Gravity.CENTER);
-        levelText.setPadding(0, dp(16), 0, dp(16));
-        root.addView(levelText, new LinearLayout.LayoutParams(
+        topBar.addView(levelText, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
+        // Поле колб
         tubeContainer = new LinearLayout(this);
         tubeContainer.setOrientation(LinearLayout.HORIZONTAL);
         tubeContainer.setGravity(Gravity.CENTER | Gravity.BOTTOM);
+        tubeContainer.setPadding(dp(8), dp(16), dp(8), dp(8));
         root.addView(tubeContainer, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
-        Button btnRestart = new Button(this);
-        btnRestart.setText("Restart");
+        // Нижняя панель
+        LinearLayout bottomBar = new LinearLayout(this);
+        bottomBar.setOrientation(LinearLayout.VERTICAL);
+        bottomBar.setBackgroundColor(Color.parseColor("#1E2438"));
+        bottomBar.setPadding(dp(12), dp(8), dp(12), dp(20));
+        root.addView(bottomBar, new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        // Ряд 1: Restart + Undo
+        LinearLayout row1 = makeRow();
+        bottomBar.addView(row1, new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        Button btnRestart = makeButton("↺  Restart", "#4085F5");
+        Button btnUndo    = makeButton("↩  Undo",    "#6E7191");
+        row1.addView(btnRestart, new LinearLayout.LayoutParams(0, dp(52), 1f));
+        row1.addView(space(), null);
+        row1.addView(btnUndo,   new LinearLayout.LayoutParams(0, dp(52), 1f));
+
+        // Ряд 2: Hint + Skip
+        LinearLayout row2 = makeRow();
+        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        rp.topMargin = dp(8);
+        bottomBar.addView(row2, rp);
+        Button btnHint = makeButton("💡  Hint", "#E68A00");
+        Button btnSkip = makeButton("⏭  Skip", "#E68A00");
+        row2.addView(btnHint, new LinearLayout.LayoutParams(0, dp(52), 1f));
+        row2.addView(space(), null);
+        row2.addView(btnSkip, new LinearLayout.LayoutParams(0, dp(52), 1f));
+
         btnRestart.setOnClickListener(v -> gameManager.restartLevel());
-        root.addView(btnRestart, new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, dp(52)));
+        btnUndo.setOnClickListener(v -> gameManager.undoMove());
+        btnHint.setOnClickListener(v -> showHint());
+        btnSkip.setOnClickListener(v -> new AlertDialog.Builder(this)
+            .setTitle("Пропустить уровень?")
+            .setPositiveButton("Пропустить", (d, w) -> gameManager.nextLevel())
+            .setNegativeButton("Отмена", null)
+            .show());
 
         gameManager.setListener(this);
         gameManager.loadLevel(1);
@@ -52,21 +96,26 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
 
     @Override
     public void onLevelLoaded(int level, List<Tube> tubes) {
-        levelText.setText("Level " + level);
+        levelText.setText("Level  " + level);
         tubeContainer.removeAllViews();
         tubeViews.clear();
-        for (int i = 0; i < tubes.size(); i++) {
-            TubeView tv = new TubeView(this);
-            tv.setTube(tubes.get(i));
-            tv.setTag(i);
-            tv.setOnTubeClickListener(v -> {
-                int idx = (int) v.getTag();
-                gameManager.onTubeClicked(idx);
-            });
-            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(dp(72), dp(260));
-            p.setMargins(dp(4), 0, dp(4), 0);
-            tubeContainer.addView(tv, p);
-            tubeViews.add(tv);
+
+        int count = tubes.size();
+        if (count > 6) {
+            tubeContainer.setOrientation(LinearLayout.VERTICAL);
+            tubeContainer.setGravity(Gravity.CENTER);
+            int half = (count + 1) / 2;
+            LinearLayout row1 = makeRow();
+            row1.setGravity(Gravity.CENTER);
+            LinearLayout row2 = makeRow();
+            row2.setGravity(Gravity.CENTER);
+            for (int i = 0; i < half; i++) addTubeView(row1, tubes.get(i), i);
+            for (int i = half; i < count; i++) addTubeView(row2, tubes.get(i), i);
+            tubeContainer.addView(row1);
+            tubeContainer.addView(row2);
+        } else {
+            tubeContainer.setOrientation(LinearLayout.HORIZONTAL);
+            for (int i = 0; i < count; i++) addTubeView(tubeContainer, tubes.get(i), i);
         }
     }
 
@@ -76,15 +125,84 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
             tubeViews.get(i).setSelected(i == selectedIndex);
     }
 
-    @Override public void onMoveSuccess(int f, int t) {
+    @Override
+    public void onMoveSuccess(int f, int t) {
         if (f < tubeViews.size()) tubeViews.get(f).invalidate();
         if (t < tubeViews.size()) tubeViews.get(t).invalidate();
     }
 
-    @Override public void onMoveInvalid() {}
+    @Override
+    public void onMoveInvalid() {}
 
-    @Override public void onLevelComplete() {
-        levelText.setText("🎉 Level Complete!");
+    @Override
+    public void onLevelComplete() {
+        new AlertDialog.Builder(this)
+            .setTitle("🎉 Уровень пройден!")
+            .setMessage("Перейти к следующему уровню?")
+            .setPositiveButton("Далее", (d, w) -> gameManager.nextLevel())
+            .setNegativeButton("Остаться", null)
+            .show();
+    }
+
+    private void addTubeView(LinearLayout parent, Tube tube, int index) {
+        TubeView tv = new TubeView(this);
+        tv.setTube(tube);
+        tv.setTag(index);
+        tv.setOnTubeClickListener(v -> {
+            int idx = (int) v.getTag();
+            gameManager.onTubeClicked(idx);
+        });
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(dp(72), dp(260));
+        p.setMargins(dp(4), 0, dp(4), 0);
+        parent.addView(tv, p);
+        tubeViews.add(tv);
+    }
+
+    private void showHint() {
+        int[] hint = gameManager.findHint();
+        if (hint == null) {
+            Toast.makeText(this, "Нет ходов!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        blinkTube(tubeViews.get(hint[0]), 0);
+        blinkTube(tubeViews.get(hint[1]), 250);
+    }
+
+    private void blinkTube(TubeView tv, long delay) {
+        tv.postDelayed(() -> {
+            tv.setSelected(true);
+            tv.postDelayed(() -> {
+                tv.setSelected(false);
+                tv.postDelayed(() -> {
+                    tv.setSelected(true);
+                    tv.postDelayed(() -> tv.setSelected(false), 300);
+                }, 200);
+            }, 300);
+        }, delay);
+    }
+
+    private Button makeButton(String text, String color) {
+        Button btn = new Button(this);
+        btn.setText(text);
+        btn.setTextColor(Color.WHITE);
+        btn.setTextSize(14f);
+        btn.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        btn.setBackgroundColor(Color.parseColor(color));
+        btn.setAllCaps(false);
+        return btn;
+    }
+
+    private LinearLayout makeRow() {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER);
+        return row;
+    }
+
+    private View space() {
+        View v = new View(this);
+        v.setLayoutParams(new ViewGroup.LayoutParams(dp(8), dp(8)));
+        return v;
     }
 
     private int dp(float dp) {

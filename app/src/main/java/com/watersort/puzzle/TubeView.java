@@ -15,25 +15,44 @@ public class TubeView extends View {
     private boolean selected = false;
     private OnTubeClickListener listener;
 
-    private final Paint tubePaint  = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint borderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint ballPaint  = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint highlightPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    // Краски
+    private final Paint jarPaint    = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint jarBorder   = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint candyPaint  = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint shinePaint  = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint solvedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint lidPaint    = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public TubeView(Context context) {
         super(context);
 
-        tubePaint.setColor(Color.parseColor("#CCE8F7"));
-        tubePaint.setAlpha(120);
-        tubePaint.setStyle(Paint.Style.FILL);
+        // Стекло банки
+        jarPaint.setColor(Color.parseColor("#E8F4FD"));
+        jarPaint.setAlpha(180);
+        jarPaint.setStyle(Paint.Style.FILL);
 
-        borderPaint.setColor(Color.parseColor("#AACCEE"));
-        borderPaint.setStyle(Paint.Style.STROKE);
-        borderPaint.setStrokeWidth(4f);
+        // Рамка банки
+        jarBorder.setColor(Color.parseColor("#B8D4E8"));
+        jarBorder.setStyle(Paint.Style.STROKE);
+        jarBorder.setStrokeWidth(3f);
 
-        highlightPaint.setColor(Color.WHITE);
-        highlightPaint.setAlpha(80);
-        highlightPaint.setStyle(Paint.Style.FILL);
+        // Блик на конфете
+        shinePaint.setColor(Color.WHITE);
+        shinePaint.setAlpha(120);
+        shinePaint.setStyle(Paint.Style.FILL);
+
+        // Тень
+        shadowPaint.setColor(Color.parseColor("#44000000"));
+        shadowPaint.setStyle(Paint.Style.FILL);
+
+        // Рамка решённой банки
+        solvedPaint.setColor(Color.parseColor("#FFD93D"));
+        solvedPaint.setStyle(Paint.Style.STROKE);
+        solvedPaint.setStrokeWidth(5f);
+
+        // Крышка банки
+        lidPaint.setStyle(Paint.Style.FILL);
     }
 
     public void setTube(Tube tube) {
@@ -69,45 +88,108 @@ public class TubeView extends View {
 
         int w = getWidth();
         int h = getHeight();
-        float ballRadius = w / 2f * 0.8f;
-        float tubeW = w * 0.84f;
-        float left = (w - tubeW) / 2f;
-        float bottom = h - dp(4);
-        float tubeH = ballRadius * 2 * tube.getMaxCapacity() + ballRadius * 0.5f;
-        float top = bottom - tubeH;
 
-        // Рисуем колбу (U-форма)
-        float r = tubeW / 2f;
-        Path path = new Path();
-        path.moveTo(left, top);
-        path.lineTo(left, bottom - r);
-        path.arcTo(new RectF(left, bottom - tubeW, left + tubeW, bottom), 180, -180, false);
-        path.lineTo(left + tubeW, top);
+        float candyRadius = w / 2f * 0.75f;
+        float jarW  = w * 0.82f;
+        float left  = (w - jarW) / 2f;
+        float bottom = h - dp(8);
+        float jarH  = candyRadius * 2.1f * tube.getMaxCapacity() + dp(8);
+        float top   = bottom - jarH;
+        float r     = jarW / 2f;
 
-        // Смещение если выбрана
-        float offsetY = selected ? -dp(20) : 0;
+        // Смещение вверх если выбрана
+        float offsetY = selected ? -dp(22) : 0;
         canvas.save();
         canvas.translate(0, offsetY);
 
-        canvas.drawPath(path, tubePaint);
+        // Рисуем банку (прямоугольник с закруглённым дном)
+        Path jarPath = new Path();
+        jarPath.moveTo(left, top + dp(16));
+        jarPath.lineTo(left, bottom - r);
+        jarPath.arcTo(new RectF(left, bottom - jarW, left + jarW, bottom), 180, -180, false);
+        jarPath.lineTo(left + jarW, top + dp(16));
+        jarPath.close();
 
-        borderPaint.setColor(selected
-            ? Color.parseColor("#F5D920")
-            : Color.parseColor("#AACCEE"));
-        canvas.drawPath(path, borderPaint);
+        // Тень банки
+        canvas.save();
+        canvas.translate(dp(3), dp(3));
+        canvas.drawPath(jarPath, shadowPaint);
+        canvas.restore();
 
-        // Рисуем шарики
+        // Тело банки
+        canvas.drawPath(jarPath, jarPaint);
+
+        // Рисуем конфеты
         float cx = w / 2f;
         int count = tube.getCount();
         for (int i = 0; i < count; i++) {
             Ball ball = tube.getBallAt(i);
             if (ball == null) continue;
-            float cy = bottom - ballRadius * 0.5f - (i * ballRadius * 2f) - ballRadius;
-            ballPaint.setColor(ball.getColor());
-            canvas.drawCircle(cx, cy, ballRadius, ballPaint);
-            canvas.drawCircle(cx - ballRadius * 0.25f, cy - ballRadius * 0.25f,
-                ballRadius * 0.3f, highlightPaint);
+
+            float cy = bottom - candyRadius * 0.6f
+                     - (i * candyRadius * 2.1f) - candyRadius;
+
+            // Тень конфеты
+            shadowPaint.setAlpha(50);
+            canvas.drawCircle(cx + dp(2), cy + dp(2), candyRadius, shadowPaint);
+
+            // Конфета
+            candyPaint.setColor(ball.getColor());
+            canvas.drawCircle(cx, cy, candyRadius, candyPaint);
+
+            // Блик (делает конфету объёмной)
+            canvas.drawCircle(
+                cx - candyRadius * 0.28f,
+                cy - candyRadius * 0.28f,
+                candyRadius * 0.35f,
+                shinePaint
+            );
+
+            // Маленький блик
+            shinePaint.setAlpha(60);
+            canvas.drawCircle(
+                cx + candyRadius * 0.2f,
+                cy + candyRadius * 0.2f,
+                candyRadius * 0.15f,
+                shinePaint
+            );
+            shinePaint.setAlpha(120);
         }
+
+        // Рамка банки (поверх конфет)
+        Paint borderToDraw = tube.isSolved() ? solvedPaint : jarBorder;
+        if (selected) {
+            Paint selPaint = new Paint(jarBorder);
+            selPaint.setColor(Color.parseColor("#FF6B9D"));
+            selPaint.setStrokeWidth(5f);
+            canvas.drawPath(jarPath, selPaint);
+        } else {
+            canvas.drawPath(jarPath, borderToDraw);
+        }
+
+        // Крышка банки (горлышко)
+        float lidW = jarW * 0.7f;
+        float lidL = (w - lidW) / 2f;
+        float lidH = dp(12);
+        RectF lidRect = new RectF(lidL, top, lidL + lidW, top + lidH);
+
+        if (tube.isSolved() && !tube.isEmpty()) {
+            // Золотая крышка если решена
+            lidPaint.setColor(Color.parseColor("#FFD93D"));
+        } else {
+            lidPaint.setColor(Color.parseColor("#B8D4E8"));
+        }
+        canvas.drawRoundRect(lidRect, dp(4), dp(4), lidPaint);
+
+        // Блик на крышке
+        Paint lidShine = new Paint(Paint.ANTI_ALIAS_FLAG);
+        lidShine.setColor(Color.WHITE);
+        lidShine.setAlpha(80);
+        lidShine.setStyle(Paint.Style.FILL);
+        canvas.drawRoundRect(
+            new RectF(lidL + dp(4), top + dp(2), lidL + lidW - dp(4), top + lidH / 2f),
+            dp(3), dp(3), lidShine
+        );
 
         canvas.restore();
     }

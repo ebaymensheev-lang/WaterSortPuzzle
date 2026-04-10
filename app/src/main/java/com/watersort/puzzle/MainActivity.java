@@ -35,13 +35,13 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.parseColor("#FFF0F5")); // Нежно-розовый фон
+        root.setBackgroundColor(Color.parseColor("#1A1C2A")); // Нежно-розовый фон
         setContentView(root);
 
         // Верхняя панель
         LinearLayout topBar = new LinearLayout(this);
         topBar.setGravity(Gravity.CENTER);
-        topBar.setBackgroundColor(Color.parseColor("#FF6B9D")); // Клубничный
+        topBar.setBackgroundColor(Color.parseColor("#2A2D3E")); // Клубничный
         topBar.setPadding(dp(16), dp(16), dp(16), dp(16));
         root.addView(topBar, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
         // Нижняя панель
         LinearLayout bottomBar = new LinearLayout(this);
         bottomBar.setOrientation(LinearLayout.VERTICAL);
-        bottomBar.setBackgroundColor(Color.parseColor("#FF6B9D"));
+        bottomBar.setBackgroundColor(Color.parseColor("#2A2D3E"));
         bottomBar.setPadding(dp(12), dp(8), dp(12), dp(20));
         root.addView(bottomBar, new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));

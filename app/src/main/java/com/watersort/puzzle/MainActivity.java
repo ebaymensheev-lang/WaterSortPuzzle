@@ -1,7 +1,6 @@
 package com.watersort.puzzle;
 
 import android.animation.ObjectAnimator;
-import android.animation.ValueAnimator;
 import android.graphics.Color;
 import android.media.ToneGenerator;
 import android.media.AudioManager;
@@ -23,7 +22,11 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
     private TextView winBanner;
     private final List<TubeView> tubeViews = new ArrayList<>();
     private ToneGenerator toneGenerator;
-    private boolean isPouring = false; // блокировка во время анимации
+    private boolean isPouring = false;
+
+    // Размеры колб — меняются в зависимости от количества
+    private int tubeWidth  = 68;
+    private int tubeHeight = 280;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -125,30 +128,52 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
         gameManager.loadLevel(savedLevel);
     }
 
-    // Звук шороха песка — несколько тонов быстро
+    // Вычисляем размер колб в зависимости от количества
+    private void calculateTubeSize(int tubeCount) {
+        if (tubeCount <= 4) {
+            tubeWidth  = 80;
+            tubeHeight = 300;
+        } else if (tubeCount <= 6) {
+            tubeWidth  = 68;
+            tubeHeight = 280;
+        } else if (tubeCount <= 8) {
+            tubeWidth  = 56;
+            tubeHeight = 240;
+        } else {
+            tubeWidth  = 46;
+            tubeHeight = 200;
+        }
+    }
+
     private void playSandSound() {
-    try {
-        if (toneGenerator == null) return;
-        // Имитация шороха — быстрые короткие шумы на разных частотах
-        toneGenerator.startTone(ToneGenerator.TONE_CDMA_ABBR_REORDER, 25);
-        new android.os.Handler().postDelayed(() -> {
-            try { toneGenerator.startTone(ToneGenerator.TONE_CDMA_ABBR_REORDER, 20); }
-            catch (Exception e) {}
-        }, 40);
-        new android.os.Handler().postDelayed(() -> {
-            try { toneGenerator.startTone(ToneGenerator.TONE_CDMA_ABBR_REORDER, 20); }
-            catch (Exception e) {}
-        }, 90);
-        new android.os.Handler().postDelayed(() -> {
-            try { toneGenerator.startTone(ToneGenerator.TONE_CDMA_ABBR_REORDER, 15); }
-            catch (Exception e) {}
-        }, 140);
-        new android.os.Handler().postDelayed(() -> {
-            try { toneGenerator.startTone(ToneGenerator.TONE_CDMA_ABBR_REORDER, 10); }
-            catch (Exception e) {}
-        }, 200);
-    } catch (Exception e) {}
-}
+        try {
+            if (toneGenerator == null) return;
+            toneGenerator.startTone(ToneGenerator.TONE_CDMA_ABBR_REORDER, 25);
+            new android.os.Handler().postDelayed(() -> {
+                try { toneGenerator.startTone(ToneGenerator.TONE_CDMA_ABBR_REORDER, 20); }
+                catch (Exception e) {}
+            }, 40);
+            new android.os.Handler().postDelayed(() -> {
+                try { toneGenerator.startTone(ToneGenerator.TONE_CDMA_ABBR_REORDER, 20); }
+                catch (Exception e) {}
+            }, 90);
+            new android.os.Handler().postDelayed(() -> {
+                try { toneGenerator.startTone(ToneGenerator.TONE_CDMA_ABBR_REORDER, 15); }
+                catch (Exception e) {}
+            }, 140);
+            new android.os.Handler().postDelayed(() -> {
+                try { toneGenerator.startTone(ToneGenerator.TONE_CDMA_ABBR_REORDER, 10); }
+                catch (Exception e) {}
+            }, 200);
+        } catch (Exception e) {}
+    }
+
+    private void playWinSound() {
+        try {
+            if (toneGenerator == null) return;
+            toneGenerator.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 400);
+        } catch (Exception e) {}
+    }
 
     @Override
     public void onLevelLoaded(int level, List<Tube> tubes) {
@@ -159,6 +184,10 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
         tubeViews.clear();
         tubeContainer.setOrientation(LinearLayout.HORIZONTAL);
         tubeContainer.setGravity(Gravity.CENTER | Gravity.BOTTOM);
+
+        // Считаем размер колб
+        calculateTubeSize(tubes.size());
+
         if (tubes.size() > 6) {
             buildTwoRows(tubes);
         } else {
@@ -176,21 +205,17 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
     @Override
     public void onMoveSuccess(int fromIndex, int toIndex) {
         isPouring = true;
-
-        // Анимация — колба-источник поднимается и пересыпает
         TubeView fromView = fromIndex < tubeViews.size() ? tubeViews.get(fromIndex) : null;
         TubeView toView   = toIndex   < tubeViews.size() ? tubeViews.get(toIndex)   : null;
 
         playSandSound();
 
-        // Анимируем наклон источника
         if (fromView != null) {
             ObjectAnimator tilt = ObjectAnimator.ofFloat(fromView, "rotation", 0f, -15f, 0f);
             tilt.setDuration(400);
             tilt.start();
         }
 
-        // Анимируем получателя — песок "падает"
         if (toView != null) {
             toView.animatePour(() -> {
                 isPouring = false;
@@ -216,18 +241,15 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
     @Override
     public void onLevelComplete() {
         playWinSound();
-
         int next = gameManager.getCurrentLevel() + 1;
         if (next <= LevelManager.TOTAL_LEVELS) {
             getSharedPreferences("sand_sort", MODE_PRIVATE)
                 .edit().putInt("level", next).apply();
         }
-
         winBanner.setText("🎉 Уровень пройден! Нажмите Next!");
         winBanner.setVisibility(View.VISIBLE);
         winBanner.setAlpha(0f);
         winBanner.animate().alpha(1f).setDuration(500).start();
-
         for (int i = 0; i < tubeViews.size(); i++) {
             final TubeView tv = tubeViews.get(i);
             tv.postDelayed(() -> {
@@ -243,13 +265,17 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
         tubeContainer.setOrientation(LinearLayout.VERTICAL);
         tubeContainer.setGravity(Gravity.CENTER);
         int half = (tubes.size() + 1) / 2;
+
+        // При двух рядах колбы ещё меньше
+        tubeHeight = tubeHeight * 85 / 100;
+
         LinearLayout row1 = makeRow();
         row1.setGravity(Gravity.CENTER | Gravity.BOTTOM);
         LinearLayout row2 = makeRow();
         row2.setGravity(Gravity.CENTER | Gravity.BOTTOM);
         LinearLayout.LayoutParams r2p = new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        r2p.topMargin = dp(12);
+        r2p.topMargin = dp(8);
         for (int i = 0; i < half; i++) addTubeView(row1, tubes.get(i), i);
         for (int i = half; i < tubes.size(); i++) addTubeView(row2, tubes.get(i), i);
         tubeContainer.addView(row1);
@@ -266,8 +292,8 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
                 gameManager.onTubeClicked(idx);
             }
         });
-        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(dp(68), dp(280));
-        p.setMargins(dp(4), 0, dp(4), 0);
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(dp(tubeWidth), dp(tubeHeight));
+        p.setMargins(dp(3), 0, dp(3), 0);
         parent.addView(tv, p);
         tubeViews.add(tv);
     }

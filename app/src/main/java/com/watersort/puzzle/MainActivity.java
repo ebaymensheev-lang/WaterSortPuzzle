@@ -127,28 +127,28 @@ public class MainActivity extends AppCompatActivity implements GameManager.GameL
 
     // Звук шороха песка — несколько тонов быстро
     private void playSandSound() {
-        try {
-            if (toneGenerator == null) return;
-            toneGenerator.startTone(ToneGenerator.TONE_CDMA_SOFT_ERROR_LITE, 60);
-            new android.os.Handler().postDelayed(() -> {
-                try {
-                    toneGenerator.startTone(ToneGenerator.TONE_CDMA_SOFT_ERROR_LITE, 40);
-                } catch (Exception e) {}
-            }, 80);
-            new android.os.Handler().postDelayed(() -> {
-                try {
-                    toneGenerator.startTone(ToneGenerator.TONE_CDMA_SOFT_ERROR_LITE, 30);
-                } catch (Exception e) {}
-            }, 150);
-        } catch (Exception e) {}
-    }
-
-    private void playWinSound() {
-        try {
-            if (toneGenerator == null) return;
-            toneGenerator.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 400);
-        } catch (Exception e) {}
-    }
+    try {
+        if (toneGenerator == null) return;
+        // Имитация шороха — быстрые короткие шумы на разных частотах
+        toneGenerator.startTone(ToneGenerator.TONE_CDMA_ABBR_REORDER, 25);
+        new android.os.Handler().postDelayed(() -> {
+            try { toneGenerator.startTone(ToneGenerator.TONE_CDMA_ABBR_REORDER, 20); }
+            catch (Exception e) {}
+        }, 40);
+        new android.os.Handler().postDelayed(() -> {
+            try { toneGenerator.startTone(ToneGenerator.TONE_CDMA_ABBR_REORDER, 20); }
+            catch (Exception e) {}
+        }, 90);
+        new android.os.Handler().postDelayed(() -> {
+            try { toneGenerator.startTone(ToneGenerator.TONE_CDMA_ABBR_REORDER, 15); }
+            catch (Exception e) {}
+        }, 140);
+        new android.os.Handler().postDelayed(() -> {
+            try { toneGenerator.startTone(ToneGenerator.TONE_CDMA_ABBR_REORDER, 10); }
+            catch (Exception e) {}
+        }, 200);
+    } catch (Exception e) {}
+}
 
     @Override
     public void onLevelLoaded(int level, List<Tube> tubes) {
